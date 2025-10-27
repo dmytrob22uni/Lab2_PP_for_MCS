@@ -11,17 +11,17 @@ import (
 type job struct {
 	left int
 	right int
-	wg *sync.WaitGroup  // wave's wait group
+	wave *sync.WaitGroup  // wave's wait group
 }
 
 // reads jobs from `job` channel, calculates sum and stores it in arr[left];
 // after completing the job - calls wg.Done()
-func worker(arr []int64, jobs <- chan job, done *sync.WaitGroup) {
-	defer done.Done()  // call when out of current scope
-	for j := range jobs {
-		sum := arr[j.left] + arr[j.right]
-		arr[j.left] = sum
-		j.wg.Done()
+func worker(arr []int64, jobsChn <- chan job, work *sync.WaitGroup) {
+	defer work.Done()  // call when out of current scope
+	for job := range jobsChn {  // locked and waiting for data from jobsChn channel; each time new job is added - new cycle of calculations starts
+		sum := arr[job.left] + arr[job.right]
+		arr[job.left] = sum
+		job.wave.Done()
 	}
 }
 
@@ -34,13 +34,13 @@ func parallelSum(arr []int64, nWorkers int) int64 {
 		return arr[0]
 	}
 
-	jobs := make(chan job)  // channel for giving jobs to working threads
+	jobsChn := make(chan job)  // channel for giving jobs to working threads
 
-	// start pool of workers
-	var wgWorkers sync.WaitGroup
+	// start work WaitGroup, where jobs are being done as received
+	var work sync.WaitGroup
 	for range nWorkers {
-		wgWorkers.Add(1)
-		go worker(arr, jobs, &wgWorkers)
+		work.Add(1)
+		go worker(arr, jobsChn, &work)
 	}
 
 	currentLen := len(arr)  // actual lenght, halving each wave
@@ -54,20 +54,21 @@ func parallelSum(arr []int64, nWorkers int) int64 {
 		for i := range pairs {
 			left := i
 			right := currentLen - 1 - i
-			jobs <- job {  // pass a job struct for each pair to the jobs WaitGroup
+			jobsChn <- job {  // pass new job struct for each pair to the jobsChn channel, which is making its deed in work WaitGroup
 				left: left,
 				right: right,
-				wg: &wave,  // reference to current wave
+				wave: &wave,  // reference to current wave
 			}
 		}
+
 		wave.Wait()  // wait 'till all wave's jobs will complete work
 
 		currentLen = (currentLen + 1) / 2
 	}
 
-	close(jobs)  // shutting down the jobs channel
+	close(jobsChn)  // shutting down the jobs channel, 'cause we are done here and no more jobs are expected
 
-	wgWorkers.Wait()
+	work.Wait()  // wait till main work WaitGroup finishes jobs calculations if any
 
 	return arr[0]
 }
