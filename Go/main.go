@@ -26,7 +26,7 @@ func worker(arr []int64, jobs <- chan job, done *sync.WaitGroup) {
 }
 
 // core function for doing parallel sums by waves
-func parallelSum(arr []int64, workers int) int64 {
+func parallelSum(arr []int64, nWorkers int) int64 {
 	if len(arr) == 0 {
 		return 0
 	}
@@ -38,7 +38,7 @@ func parallelSum(arr []int64, workers int) int64 {
 
 	// start pool of workers
 	var wgWorkers sync.WaitGroup
-	for range workers {
+	for range nWorkers {
 		wgWorkers.Add(1)
 		go worker(arr, jobs, &wgWorkers)
 	}
