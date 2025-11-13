@@ -85,7 +85,8 @@ func main() {
 
 	t0 := time.Now()
 	totalSum :=  parallelSum(arr, *nWorkers)
-	fmt.Printf("Time elapsed is %dms\n", time.Since(t0).Milliseconds())
+	d0 := time.Since(t0).Milliseconds()
+	fmt.Printf("Time elapsed is %dms\n", d0)
 	fmt.Printf("Total sum is %d\n\n", totalSum)
 
 	var totalSumCheck int64
@@ -93,12 +94,12 @@ func main() {
 	for i := range nItems {
 		totalSumCheck += int64(i % 1000)
 	}
-	fmt.Printf("Time elapsed is %dms\n", time.Duration(time.Since(t1).Milliseconds()))
+	d1 := time.Since(t1).Milliseconds()
+	fmt.Printf("Time elapsed is %dms\n", d1)
 	fmt.Printf("Total sum check is %d\n", totalSumCheck)
 
 	if totalSum != totalSumCheck {
 		panic("Sums are not equal!")
 	}
-
 }
 
