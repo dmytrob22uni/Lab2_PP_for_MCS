@@ -1,1 +1,1 @@
-go clean; go build; ./Lab2_PP_for_MCS
+go clean; go build -o main main_$1.go; ./main
